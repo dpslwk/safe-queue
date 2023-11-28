@@ -3,6 +3,7 @@
 namespace Digbang\SafeQueue;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ManagerRegistry;
 use Exception;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -13,62 +14,68 @@ use Illuminate\Queue\WorkerOptions;
 use Symfony\Component\Debug\Exception\FatalThrowableError;
 use Throwable;
 
-/*final*/ class Worker extends IlluminateWorker
+class Worker extends IlluminateWorker
 {
     /**
-     * @var EntityManagerInterface
+     * @var ManagerRegistry
      */
-    private $entityManager;
+    protected $managerRegistry;
 
     /**
      * Worker constructor.
      *
-     * @param QueueManager              $manager
-     * @param Dispatcher                $events
-     * @param EntityManagerInterface    $entityManager
-     * @param ExceptionHandler          $exceptions
-     * @param  \callable $isDownForMaintenance
+     * @param QueueManager $manager
+     * @param Dispatcher $events
+     * @param ManagerRegistry $managerRegistry
+     * @param ExceptionHandler $exceptions
+     * @param \callable $isDownForMaintenance
      */
     public function __construct(
         QueueManager $manager,
         Dispatcher $events,
-        EntityManagerInterface $entityManager,
+        ManagerRegistry $managerRegistry,
         ExceptionHandler $exceptions,
         callable $isDownForMaintenance
     ) {
         parent::__construct($manager, $events, $exceptions, $isDownForMaintenance);
 
-        $this->entityManager = $entityManager;
+        $this->managerRegistry = $managerRegistry;
     }
 
     /**
-     * Wrap parent::runJob to make sure we have a good EM.
+     * Wrap parent::getNextJob to make sure we have a good EM before processing the next job.
+     * This allow us to avoid incrementing the attempts on the job if the worker fails because of the EM.
      *
-     * Most exception handling is done in the parent method, so we consider any new
-     * exceptions to be a result of our setup.
+     * Get the next job from the queue connection.
      *
-     * @param \Illuminate\Contracts\Queue\Job $job
-     * @param string                          $connectionName
-     * @param WorkerOptions                   $options
+     * @param  \Illuminate\Contracts\Queue\Queue  $connection
+     * @param  string  $queue
+     * @return \Illuminate\Contracts\Queue\Job|null
      */
-    protected function runJob($job, $connectionName, WorkerOptions $options)
+    protected function getNextJob($connection, $queue)
     {
+        $exception = null;
+
         try {
             $this->assertEntityManagerOpen();
             $this->assertEntityManagerClear();
             $this->assertGoodDatabaseConnection();
-
-            parent::runJob($job, $connectionName, $options);
         } catch (EntityManagerClosedException $e) {
-            $this->exceptions->report($e);
-            $this->stop(1);
+            $exception = $e;
         } catch (Exception $e) {
-            $this->exceptions->report(new QueueSetupException("Error in queue setup while running a job", 0, $e));
-            $this->stop(1);
+            $exception = new QueueSetupException("Error in queue setup while getting next job", 0, $e);
         } catch (Throwable $e) {
-            $this->exceptions->report(new QueueSetupException("Error in queue setup while running a job", 0, new FatalThrowableError($e)));
-            $this->stop(1);
+            $exception = new QueueSetupException("Error in queue setup while getting next job", 0, new FatalThrowableError($e));
         }
+
+        if ($exception) {
+            $this->shouldQuit = true;
+            $this->exceptions->report($exception);
+
+            return null;
+        }
+
+        return parent::getNextJob($connection, $queue);
     }
 
     /**
@@ -76,11 +83,11 @@ use Throwable;
      */
     private function assertEntityManagerOpen()
     {
-        if ($this->entityManager->isOpen()) {
-            return;
+        foreach ($this->managerRegistry->getManagers() as $entityManager) {
+            if (!$entityManager->isOpen()) {
+                throw new EntityManagerClosedException;
+            }
         }
-
-        throw new EntityManagerClosedException;
     }
 
     /**
@@ -88,7 +95,9 @@ use Throwable;
      */
     private function assertEntityManagerClear()
     {
-        $this->entityManager->clear();
+        foreach ($this->managerRegistry->getManagers() as $entityManager) {
+            $entityManager->clear();
+        }
     }
 
     /**
@@ -98,11 +107,13 @@ use Throwable;
      */
     private function assertGoodDatabaseConnection()
     {
-        $connection = $this->entityManager->getConnection();
+        foreach ($this->managerRegistry->getManagers() as $entityManager) {
+            $connection = $entityManager->getConnection();
 
-        if ($connection->ping() === false) {
-            $connection->close();
-            $connection->connect();
+            if ($connection->ping() === false) {
+                $connection->close();
+                $connection->connect();
+            }
         }
     }
 }
