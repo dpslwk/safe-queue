@@ -101,7 +101,7 @@ class Worker extends IlluminateWorker
         foreach ($this->managerRegistry->getManagers() as $entityManager) {
             $connection = $entityManager->getConnection();
 
-            if ($connection->ping() === false) {
+            if (!$connection->isConnected()) {
                 $connection->close();
                 $connection->connect();
             }
