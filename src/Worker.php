@@ -2,6 +2,8 @@
 
 namespace Digbang\SafeQueue;
 
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DBALException;
 use Doctrine\Persistence\ManagerRegistry;
 use Exception;
 use Illuminate\Contracts\Debug\ExceptionHandler;
@@ -101,10 +103,21 @@ class Worker extends IlluminateWorker
         foreach ($this->managerRegistry->getManagers() as $entityManager) {
             $connection = $entityManager->getConnection();
 
-            if (!$connection->isConnected()) {
+            if ($this->ping($connection) === false) {
                 $connection->close();
                 $connection->connect();
             }
+        }
+    }
+
+    private function ping(Connection $connection): bool
+    {
+        try {
+            $connection->query($connection->getDatabasePlatform()->getDummySelectSQL());
+
+            return true;
+        } catch (DBALException $e) {
+            return false;
         }
     }
 }
