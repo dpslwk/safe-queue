@@ -18,6 +18,7 @@ Version | Supported Laravel Versions
 0.3.* | \> 5.4 & <=5.8.*
 0.4.* | ^6.0 & ^7.0
 0.5.* | ^8.0
+2.0.0 | ^10.0 & ^11.0
 
 #### How it Works
 

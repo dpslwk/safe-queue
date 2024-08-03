@@ -1,5 +1,5 @@
 {
-  "name": "digbang/safe-queue",
+  "name": "lwk/safe-queue",
   "description": "A Laravel Doctrine friendly daemonising queue worker for Laravel",
   "license": "MIT",
   "authors": [
@@ -18,7 +18,7 @@
   ],
   "require": {
     "php": "^8.1|^8.2|^8.3",
-    "illuminate/queue": "^10.0|^11",
+    "illuminate/queue": "^10.0|^11.0",
     "laravel-doctrine/orm": "^2.1"
   },
   "require-dev": {
