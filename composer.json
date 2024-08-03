@@ -1,35 +1,39 @@
 {
-    "name": "digbang/safe-queue",
-    "description": "A Laravel Doctrine friendly daemonising queue worker for Laravel",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Max Brokman",
-            "email": "max.brokman@vice.com"
-        },
-        {
-            "name": "Dario Govergun",
-            "email": "dgovergun@digbang.com"
-        }
-    ],
-    "require": {
-        "php": "^7.4 || ^8.0.2",
-        "illuminate/queue": "^8.0 || ^9.0",
-        "laravel-doctrine/orm": "^1.7"
+  "name": "digbang/safe-queue",
+  "description": "A Laravel Doctrine friendly daemonising queue worker for Laravel",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Max Brokman",
+      "email": "max.brokman@vice.com"
     },
-    "require-dev": {
-        "mockery/mockery": "^1.5",
-        "phpunit/phpunit": "^8.5 || ^9.5",
-        "friendsofphp/php-cs-fixer": "^3.6"
+    {
+      "name": "Dario Govergun",
+      "email": "dgovergun@digbang.com"
     },
-    "autoload": {
-        "psr-4": {
-            "Digbang\\SafeQueue\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "test\\Digbang\\SafeQueue\\": "tests/"
-        }
+    {
+      "name": "DIJ Digital",
+      "email": "support@dij.digital"
     }
+  ],
+  "require": {
+    "php": "^8.1|^8.2|^8.3",
+    "illuminate/queue": "^10.0|^11",
+    "laravel-doctrine/orm": "^2.1"
+  },
+  "require-dev": {
+    "mockery/mockery": "^1.6",
+    "phpunit/phpunit": "^10.0",
+    "friendsofphp/php-cs-fixer": "^3.40"
+  },
+  "autoload": {
+    "psr-4": {
+      "Digbang\\SafeQueue\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Digbang\\SafeQueue\\Tests\\": "tests/"
+    }
+  }
 }
